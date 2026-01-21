@@ -1,2 +1,2 @@
 # reflective_journal
-Offline-first journaling app that transforms spoken reflections into meaninful insights.
+Reflective Journal is an offline-first journaling app that transforms spoken reflections into meaningful daily insights—automatically building a private, structured journal without sending your data to the cloud.
