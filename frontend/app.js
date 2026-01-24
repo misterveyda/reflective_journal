@@ -66,10 +66,10 @@ function renderLoginPage() {
                     <div id="errorContainer"></div>
                     
                     <div class="form-group">
-                        <label for="email">Email Address</label>
+                        <label for="email">Email</label>
                         <input 
                             type="email" 
-                            placeholder="your.email@example.com" 
+                            placeholder="your@email.com" 
                             id="email" 
                             required
                             autocomplete="email"
@@ -77,38 +77,24 @@ function renderLoginPage() {
                     </div>
                     
                     <div class="form-group">
-                        <label for="password">${state.isSignUp ? 'Create Password' : 'Password'}</label>
+                        <label for="password">Password</label>
                         <input 
                             type="password" 
-                            placeholder="${state.isSignUp ? 'At least 8 characters' : 'Enter your password'}" 
+                            placeholder="Enter password" 
                             id="password" 
                             required
                             autocomplete="${state.isSignUp ? 'new-password' : 'current-password'}"
                         >
                     </div>
                     
-                    ${state.isSignUp ? `
-                    <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
-                        <input 
-                            type="password" 
-                            placeholder="Re-enter your password" 
-                            id="confirmPassword" 
-                            required
-                            autocomplete="new-password"
-                        >
-                    </div>
-                    ` : ''}
-                    
                     <button type="submit" id="submitBtn" class="submit-btn">
-                        ${state.isSignUp ? 'Create Account' : 'Log In'}
+                        ${state.isSignUp ? 'Sign Up' : 'Log In'}
                     </button>
                 </form>
                 
                 <div class="toggle-section">
-                    <p>${state.isSignUp ? 'Already have an account?' : "Don't have an account?"}</p>
                     <button class="toggle-btn" id="toggleBtn">
-                        ${state.isSignUp ? 'Log In' : 'Sign Up'}
+                        ${state.isSignUp ? '← Back to Log In' : 'Create Account →'}
                     </button>
                 </div>
             </div>
@@ -131,7 +117,7 @@ function attachLoginListeners() {
 async function handleLogin(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value.trim();
+    const email = document.getElementById('email').value.trim().toLowerCase();
     const password = document.getElementById('password').value;
     const submitBtn = document.getElementById('submitBtn');
     const errorContainer = document.getElementById('errorContainer');
@@ -139,29 +125,9 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
     errorContainer.innerHTML = '';
     
-    // Client-side validation for signup
-    if (state.isSignUp) {
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        // Validate password length
-        if (password.length < 8) {
-            errorContainer.innerHTML = `<div class="error">Password must be at least 8 characters</div>`;
-            submitBtn.disabled = false;
-            return;
-        }
-        
-        // Validate passwords match
-        if (password !== confirmPassword) {
-            errorContainer.innerHTML = `<div class="error">Passwords do not match</div>`;
-            submitBtn.disabled = false;
-            return;
-        }
-    }
-    
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        errorContainer.innerHTML = `<div class="error">Please enter a valid email address</div>`;
+    // Basic validation
+    if (!email || !password) {
+        errorContainer.innerHTML = '<div class="error">Email and password required</div>';
         submitBtn.disabled = false;
         return;
     }
@@ -172,29 +138,25 @@ async function handleLogin(e) {
             'Content-Type': 'application/json',
         };
         
-        // Add CSRF token if available
         const csrftoken = getCookie('csrftoken');
         if (csrftoken) {
             headers['X-CSRFToken'] = csrftoken;
         }
         
-        // Prepare request body based on auth type
         let body;
         if (state.isSignUp) {
-            // Registration requires username, email, password1, and password2
-            // Auto-generate username from email (part before @)
-            const username = email.split('@')[0];
+            // Generate unique username using UUID (guaranteed unique)
+            const username = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             body = JSON.stringify({
                 username: username,
-                email,
+                email: email,
                 password1: password,
                 password2: password,
             });
         } else {
-            // Login can use email and password
             body = JSON.stringify({
-                email,
-                password,
+                email: email,
+                password: password,
             });
         }
         
@@ -206,16 +168,17 @@ async function handleLogin(e) {
         });
         
         const data = await response.json();
-        
-        console.log('Auth response:', response.status, data);
+        console.log(`${state.isSignUp ? 'Signup' : 'Login'} response:`, response.status, data);
         
         if (response.ok) {
             const token = data.key || data.token || data.access_token;
             if (!token) {
-                errorContainer.innerHTML = `<div class="error">No token received from server. Response: ${JSON.stringify(data)}</div>`;
-                console.error('No token in response:', data);
+                errorContainer.innerHTML = '<div class="error">Server error: no token received</div>';
+                console.error('No token:', data);
+                submitBtn.disabled = false;
                 return;
             }
+            
             state.token = token;
             state.isAuthenticated = true;
             localStorage.setItem('token', state.token);
@@ -223,30 +186,27 @@ async function handleLogin(e) {
             fetchEntries();
             render();
         } else {
-            let errorMsg = 'Authentication failed';
-            if (data.detail) {
-                errorMsg = data.detail;
-            } else if (data.email && Array.isArray(data.email)) {
-                errorMsg = 'Email: ' + data.email[0];
-            } else if (data.password1 && Array.isArray(data.password1)) {
-                errorMsg = 'Password: ' + data.password1[0];
-            } else if (data.password && Array.isArray(data.password)) {
-                errorMsg = 'Password: ' + data.password[0];
-            } else if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
-                errorMsg = data.non_field_errors[0];
-            } else {
-                errorMsg = JSON.stringify(data);
-            }
+            // Parse error response
+            let errorMsg = 'Failed';
+            
+            if (data.detail) errorMsg = data.detail;
+            else if (data.username) errorMsg = `Username: ${Array.isArray(data.username) ? data.username[0] : data.username}`;
+            else if (data.email) errorMsg = `Email: ${Array.isArray(data.email) ? data.email[0] : data.email}`;
+            else if (data.password) errorMsg = `Password: ${Array.isArray(data.password) ? data.password[0] : data.password}`;
+            else if (data.password1) errorMsg = `Password: ${Array.isArray(data.password1) ? data.password1[0] : data.password1}`;
+            else if (data.non_field_errors) errorMsg = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
+            else errorMsg = JSON.stringify(data);
+            
             errorContainer.innerHTML = `<div class="error">${errorMsg}</div>`;
-            console.error('Auth error:', errorMsg, data);
+            console.error('Auth error:', errorMsg);
+            submitBtn.disabled = false;
         }
     } catch (err) {
         errorContainer.innerHTML = `<div class="error">Network error: ${err.message}</div>`;
-        console.error('Fetch error:', err);
-    } finally {
+        console.error('Request failed:', err);
         submitBtn.disabled = false;
     }
-}
+}}
 
 // ============ JOURNAL PAGE ============
 function renderJournalPage() {
