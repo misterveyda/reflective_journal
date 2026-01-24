@@ -183,8 +183,11 @@ async function handleLogin(e) {
         // Prepare request body based on auth type
         let body;
         if (state.isSignUp) {
-            // Registration requires password1 and password2
+            // Registration requires username, email, password1, and password2
+            // Auto-generate username from email (part before @)
+            const username = email.split('@')[0];
             body = JSON.stringify({
+                username: username,
                 email,
                 password1: password,
                 password2: password,
