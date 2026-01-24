@@ -137,17 +137,44 @@ async function handleLogin(e) {
         
         const data = await response.json();
         
+        console.log('Auth response:', response.status, data);
+        
         if (response.ok) {
-            state.token = data.key || data.token;
+            const token = data.key || data.token || data.access_token;
+            if (!token) {
+                errorContainer.innerHTML = `<div class="error">No token received from server. Response: ${JSON.stringify(data)}</div>`;
+                console.error('No token in response:', data);
+                return;
+            }
+            state.token = token;
             state.isAuthenticated = true;
             localStorage.setItem('token', state.token);
             state.entries = [];
             fetchEntries();
             render();
         } else {
-            const errorMsg = data.detail || data.email?.[0] || data.password?.[0] || JSON.stringify(data) || 'Authentication failed';
+            let errorMsg = 'Authentication failed';
+            if (data.detail) {
+                errorMsg = data.detail;
+            } else if (data.email && Array.isArray(data.email)) {
+                errorMsg = 'Email: ' + data.email[0];
+            } else if (data.password && Array.isArray(data.password)) {
+                errorMsg = 'Password: ' + data.password[0];
+            } else if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
+                errorMsg = data.non_field_errors[0];
+            } else {
+                errorMsg = JSON.stringify(data);
+            }
             errorContainer.innerHTML = `<div class="error">${errorMsg}</div>`;
+            console.error('Auth error:', errorMsg, data);
         }
+    } catch (err) {
+        errorContainer.innerHTML = `<div class="error">Network error: ${err.message}</div>`;
+        console.error('Fetch error:', err);
+    } finally {
+        submitBtn.disabled = false;
+    }
+}
     } catch (err) {
         errorContainer.innerHTML = `<div class="error">Error: ${err.message}</div>`;
     } finally {
