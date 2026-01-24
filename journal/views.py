@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from django.views.generic import TemplateView
+from django.views.generic import View
 from django.http import HttpResponse
+from django.conf import settings
 from datetime import timedelta, datetime
 from .models import JournalEntry, JournalSummary
 from .serializers import JournalEntrySerializer, JournalSummarySerializer
@@ -12,13 +13,20 @@ from .summarizer import summarize_entries, extract_themes
 import os
 
 
-class IndexView(TemplateView):
+class IndexView(View):
     """Serve the React app index.html"""
-    template_name = 'index.html'
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
+    def get(self, request, *args, **kwargs):
+        index_file = os.path.join(settings.BASE_DIR, 'frontend', 'build', 'index.html')
+        if os.path.exists(index_file):
+            with open(index_file, 'r', encoding='utf-8') as f:
+                return HttpResponse(f.read(), content_type='text/html')
+        else:
+            # Fallback if build directory doesn't exist
+            return HttpResponse(
+                '<html><body><h1>React app not built</h1><p>Please rebuild the frontend</p></body></html>',
+                content_type='text/html'
+            )
 
 
 class JournalEntryViewSet(viewsets.ModelViewSet):
