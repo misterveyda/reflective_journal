@@ -125,14 +125,28 @@ async function handleLogin(e) {
             headers['X-CSRFToken'] = csrftoken;
         }
         
+        // Prepare request body based on auth type
+        let body;
+        if (state.isSignUp) {
+            // Registration requires password1 and password2
+            body = JSON.stringify({
+                email,
+                password1: password,
+                password2: password,
+            });
+        } else {
+            // Login can use email and password
+            body = JSON.stringify({
+                email,
+                password,
+            });
+        }
+        
         const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: headers,
-            credentials: 'include',  // Include cookies
-            body: JSON.stringify({
-                email,
-                password,
-            }),
+            credentials: 'include',
+            body: body,
         });
         
         const data = await response.json();
@@ -158,6 +172,8 @@ async function handleLogin(e) {
                 errorMsg = data.detail;
             } else if (data.email && Array.isArray(data.email)) {
                 errorMsg = 'Email: ' + data.email[0];
+            } else if (data.password1 && Array.isArray(data.password1)) {
+                errorMsg = 'Password: ' + data.password1[0];
             } else if (data.password && Array.isArray(data.password)) {
                 errorMsg = 'Password: ' + data.password[0];
             } else if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
@@ -171,12 +187,6 @@ async function handleLogin(e) {
     } catch (err) {
         errorContainer.innerHTML = `<div class="error">Network error: ${err.message}</div>`;
         console.error('Fetch error:', err);
-    } finally {
-        submitBtn.disabled = false;
-    }
-}
-    } catch (err) {
-        errorContainer.innerHTML = `<div class="error">Error: ${err.message}</div>`;
     } finally {
         submitBtn.disabled = false;
     }
