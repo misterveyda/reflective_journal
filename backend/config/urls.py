@@ -11,7 +11,7 @@ from django.views.decorators.cache import cache_page
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/', include('dj_rest_auth.registration.urls')),
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     path('api/', include('journal.urls')),
     # Serve the frontend
     path('', cache_page(60)(TemplateView.as_view(template_name='index.html')), name='index'),
