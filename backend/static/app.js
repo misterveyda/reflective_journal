@@ -3,6 +3,22 @@
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_URL = isLocalhost ? 'http://localhost:8000' : window.location.origin;
 
+// Utility: Get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // State
 let state = {
     isAuthenticated: false,
@@ -99,11 +115,20 @@ async function handleLogin(e) {
     
     try {
         const endpoint = state.isSignUp ? '/api/auth/registration/' : '/api/auth/login/';
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add CSRF token if available
+        const csrftoken = getCookie('csrftoken');
+        if (csrftoken) {
+            headers['X-CSRFToken'] = csrftoken;
+        }
+        
         const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
+            credentials: 'include',  // Include cookies
             body: JSON.stringify({
                 email,
                 password,
@@ -120,7 +145,7 @@ async function handleLogin(e) {
             fetchEntries();
             render();
         } else {
-            const errorMsg = data.detail || data.email?.[0] || data.password?.[0] || 'Authentication failed';
+            const errorMsg = data.detail || data.email?.[0] || data.password?.[0] || JSON.stringify(data) || 'Authentication failed';
             errorContainer.innerHTML = `<div class="error">${errorMsg}</div>`;
         }
     } catch (err) {
@@ -266,12 +291,21 @@ async function handleCreateEntry(e) {
     errorContainer.innerHTML = '';
     
     try {
+        const headers = {
+            'Authorization': `Token ${state.token}`,
+            'Content-Type': 'application/json',
+        };
+        
+        // Add CSRF token if available
+        const csrftoken = getCookie('csrftoken');
+        if (csrftoken) {
+            headers['X-CSRFToken'] = csrftoken;
+        }
+        
         const response = await fetch(`${API_URL}/api/entries/`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Token ${state.token}`,
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
+            credentials: 'include',  // Include cookies
             body: JSON.stringify({
                 title,
                 content,
@@ -287,7 +321,9 @@ async function handleCreateEntry(e) {
             render();
             attachJournalListeners();
         } else {
-            errorContainer.innerHTML = '<div class="error">Failed to create entry</div>';
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.detail || 'Failed to create entry';
+            errorContainer.innerHTML = `<div class="error">${errorMsg}</div>`;
         }
     } catch (err) {
         errorContainer.innerHTML = `<div class="error">Error: ${err.message}</div>`;

@@ -146,6 +146,11 @@ render_url = os.environ.get('RENDER_EXTERNAL_URL', '').rstrip('/')
 if render_url:
     CORS_ALLOWED_ORIGINS.append(render_url)
 
+# CSRF configuration for API
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+
 # dj-rest-auth settings
 REST_AUTH = {
     'USE_JWT': False,
