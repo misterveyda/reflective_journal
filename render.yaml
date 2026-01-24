@@ -2,7 +2,9 @@ services:
   - type: web
     name: reflective-journal
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt && \
+      cd frontend && npm install && npm run build && cd ..
     startCommand: bash -c 'python manage.py migrate && gunicorn config.wsgi:application'
     envVars:
       - key: SECRET_KEY

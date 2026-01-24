@@ -3,10 +3,22 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django.views.generic import TemplateView
+from django.http import HttpResponse
 from datetime import timedelta, datetime
 from .models import JournalEntry, JournalSummary
 from .serializers import JournalEntrySerializer, JournalSummarySerializer
 from .summarizer import summarize_entries, extract_themes
+import os
+
+
+class IndexView(TemplateView):
+    """Serve the React app index.html"""
+    template_name = 'index.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
 
 
 class JournalEntryViewSet(viewsets.ModelViewSet):

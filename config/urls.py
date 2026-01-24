@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
-from journal.views import JournalEntryViewSet
+from journal.views import JournalEntryViewSet, IndexView
 
 router = DefaultRouter()
 router.register(r'entries', JournalEntryViewSet, basename='entry')
@@ -19,9 +19,10 @@ def api_root(request):
     })
 
 urlpatterns = [
-    path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
+    path('api/', api_root, name='api-root'),
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     path('api/', include(router.urls)),
+    path('', IndexView.as_view(), name='index'),  # Serve React frontend at root
 ]
