@@ -102,23 +102,43 @@ body {
 .login-card form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
-.login-card input {
+/* Form Groups */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    color: #333;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.form-group input {
     padding: 12px;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     font-size: 1em;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .login-card input:focus {
     outline: none;
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.login-card button[type="submit"] {
+.submit-btn {
     padding: 12px;
     background-color: #667eea;
     color: white;
@@ -126,17 +146,37 @@ body {
     border-radius: 8px;
     font-size: 1em;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.2s;
     font-weight: 600;
+    margin-top: 10px;
 }
 
-.login-card button[type="submit"]:hover {
+.submit-btn:hover {
     background-color: #5568d3;
+    transform: translateY(-2px);
 }
 
-.login-card button[type="submit"]:disabled {
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.submit-btn:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+    transform: none;
+}
+
+.toggle-section {
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+}
+
+.toggle-section p {
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 0.9em;
 }
 
 .toggle-btn {
@@ -145,7 +185,8 @@ body {
     color: #667eea;
     cursor: pointer;
     text-decoration: underline;
-    margin-top: 10px;
+    font-weight: 600;
+    transition: color 0.3s;
 }
 
 .toggle-btn:hover {

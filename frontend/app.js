@@ -64,25 +64,53 @@ function renderLoginPage() {
                 <p class="subtitle">Your safe space for thoughts</p>
                 <form id="loginForm">
                     <div id="errorContainer"></div>
-                    <input 
-                        type="email" 
-                        placeholder="Email" 
-                        id="email" 
-                        required
-                    >
-                    <input 
-                        type="password" 
-                        placeholder="Password" 
-                        id="password" 
-                        required
-                    >
-                    <button type="submit" id="submitBtn">
-                        ${state.isSignUp ? 'Sign Up' : 'Log In'}
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input 
+                            type="email" 
+                            placeholder="your.email@example.com" 
+                            id="email" 
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">${state.isSignUp ? 'Create Password' : 'Password'}</label>
+                        <input 
+                            type="password" 
+                            placeholder="${state.isSignUp ? 'At least 8 characters' : 'Enter your password'}" 
+                            id="password" 
+                            required
+                            autocomplete="${state.isSignUp ? 'new-password' : 'current-password'}"
+                        >
+                    </div>
+                    
+                    ${state.isSignUp ? `
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input 
+                            type="password" 
+                            placeholder="Re-enter your password" 
+                            id="confirmPassword" 
+                            required
+                            autocomplete="new-password"
+                        >
+                    </div>
+                    ` : ''}
+                    
+                    <button type="submit" id="submitBtn" class="submit-btn">
+                        ${state.isSignUp ? 'Create Account' : 'Log In'}
                     </button>
                 </form>
-                <button class="toggle-btn" id="toggleBtn">
-                    ${state.isSignUp ? "Already have an account? Log In" : "Don't have an account? Sign Up"}
-                </button>
+                
+                <div class="toggle-section">
+                    <p>${state.isSignUp ? 'Already have an account?' : "Don't have an account?"}</p>
+                    <button class="toggle-btn" id="toggleBtn">
+                        ${state.isSignUp ? 'Log In' : 'Sign Up'}
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -103,13 +131,40 @@ function attachLoginListeners() {
 async function handleLogin(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const submitBtn = document.getElementById('submitBtn');
     const errorContainer = document.getElementById('errorContainer');
     
     submitBtn.disabled = true;
     errorContainer.innerHTML = '';
+    
+    // Client-side validation for signup
+    if (state.isSignUp) {
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        // Validate password length
+        if (password.length < 8) {
+            errorContainer.innerHTML = `<div class="error">Password must be at least 8 characters</div>`;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            errorContainer.innerHTML = `<div class="error">Passwords do not match</div>`;
+            submitBtn.disabled = false;
+            return;
+        }
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        errorContainer.innerHTML = `<div class="error">Please enter a valid email address</div>`;
+        submitBtn.disabled = false;
+        return;
+    }
     
     try {
         const endpoint = state.isSignUp ? '/api/auth/registration/' : '/api/auth/login/';
